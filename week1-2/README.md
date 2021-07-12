@@ -267,17 +267,28 @@
   double d ;
   
   //判断是否永真
-  x == (int)(float)x 		//false
-  x == (int)(double)x		//true
-  f == (float)(double)f	//true
-  d == (float)d			//false
-  f == -(-f)				//true
-  2/3 == 2/3.0			//false
-  d < 0.0推导((d*2) < 0.0) //true
-  d > f推导-f > -d		   //true
-  d * d >= 0.0			//true
-  x*x>=0					//false
-  (d+f)-d == f			//false,若f太小，d+f=d
+  x == (int)(float)x	
+  false
+  x == (int)(double)x	
+  true
+  f == (float)(double)f	
+  true
+  d == (float)d	
+  false
+  f == -(-f)	
+  true
+  2/3 == 2/3.0	
+  false
+  d < 0.0推导((d*2) < 0.0)	
+  true
+  d > f推导-f > -d	
+  true
+  d * d >= 0.0	
+  true
+  x*x>=0	
+  false
+  (d+f)-d == f	
+  false,若f太小，d+f=d
   ```
 
 ## chapter03 程序的转换及机器级表示
