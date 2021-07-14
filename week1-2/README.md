@@ -329,20 +329,20 @@
     ```c
     #define EI_NIDENT 16
     typedef struct {
-        unsigned char e_ident[EI_NIDENT];	//魔数 
-        Elf32_Half e_type;					//文件类型
-        Elf32_Half e_machine;				//机器架构
-        Elf32_Word e_version;				//版本
-        Elf32_Addr e_entry;					//程序执行的入口地址，即执行程序时第一条指令的地址
-        Elf32_Off e_phoff;
-        Elf32_Off e_shoff;
+        unsigned char e_ident[EI_NIDENT];   //魔数 
+        Elf32_Half e_type;                  //文件类型
+        Elf32_Half e_machine;               //机器架构
+        Elf32_Word e_version;               //版本
+        Elf32_Addr e_entry;                 //程序执行的入口地址，即执行程序时第一条指令的地址
+        Elf32_Off e_phoff;                  //程序头表偏移
+        Elf32_Off e_shoff;                  //节头表偏移
         Elf32_Word e_flags;
-        Elf32_Half e_ehsize;
-        Elf32_Half e_phentsize;
-        Elf32_Half e_phnum;
-        Elf32_Half e_shentsize;
-        Elf32_Half e_shnum;
-        Elf32_Half e_shstrndx;				//.strtab在节表中的索引
+        Elf32_Half e_ehsize;                //ELF头大小
+        Elf32_Half e_phentsize;             //单个程序头表目录项大小
+        Elf32_Half e_phnum;                 //程序头表目录项个数
+        Elf32_Half e_shentsize;             //单个节表目录项大小
+        Elf32_Half e_shnum;					//节表目录项个数
+        Elf32_Half e_shstrndx;              //.strtab在节表中的索引
     } Elf32_Ehdr;
     ```
 
@@ -359,7 +359,7 @@
         Elf32_Word sh_link;	//sh_link和sh_info用于与链接相关的节（如.rel.text节、.rel.data节、.symtab节等）
         Elf32_Word sh_info;
         Elf32_Word sh_addralign;//节的对齐要求
-        Elf32_Word sh_entsize;	//节中每个表项的长度，0表示无固定长度表项
+        Elf32_Word sh_entsize;  //节中每个表项的长度，0表示无固定长度表项
     } Elf32_Shdr;
     ```
 
@@ -376,7 +376,7 @@
     - 程序头表（segment header table）：指导相同属性的节在内存中合并成段
 
     ```c
-    重定位typedef struct {
+    typedef struct {
         Elf32_Word p_type;	//类型
         Elf32_Off p_offset;	//文件偏移
         Elf32_Addr p_vaddr;	//虚拟地址
@@ -386,26 +386,33 @@
         Elf32_Word p_flags;	//权限
         Elf32_Word p_align;	//对齐大小
     } Elf32_Phdr;
+    
     ```
 
   - 共享的目标文件(.so)
 
-    - 静态链接库
+    - 静态链接库(.a)
+
+      - 将所有相关的目标模块（.o）打包为一个单独的库文件（.a），称为静态库文件 ，也称存档文件（archive）
+      - 使用静态库，可增强链接器功能，使其能通过查找一个或多个库文件中定义的符号来解析符号
+      - 在构建可执行文件时，只需指定库文件名，链接器会自动到库中寻找那些应用程序用到的目标模块，并且只把用到的模块从库中拷贝出来
+      - 创建过程
+
+      <img src="./img/11.png" style="zoom:50%;" />
+
     - 动态链接库
 
-### 0x02 符号、符号表、链接
+      - 链接方式
+        - 在第一次加载并运行时进行
+          - Linux通常由动态链接器(ld-linux.so)自动处理
+          - 标准C库 (libc.so) 通常按这种方式动态被链接
+        - 在已经开始运行后进行
+          - 在Linux中，通过调用 dlopen()等接口来实现
+      - 创建过程
 
-- 链接概述
+      ![](./img/14.png)
 
-  - 符号解析
-    - 程序中有定义和引用的符号 (包括变量和函数等)
-    - 编译器将定义的符号存放在一个符号表（ symbol table，结构数组）中
-    - 链接器将每个符号的引用都与一个确定的符号定义建立关联
-
-  - 重定位
-    - 将多个代码段与数据段分别合并为一个单独的代码段和数据段
-    - 计算每个定义的符号在虚拟地址空间中的绝对地址
-    - 将可执行文件中符号引用处的地址修改为重定位后的地址信息
+### 0x02 符号&符号表
 
 - 符号
 
@@ -426,7 +433,6 @@
   ```c
   a = 1;
   sum(1, 2);
-  
   ```
 
   - 符号类型
@@ -454,6 +460,34 @@
     - 若一个符号被定义为一次强符号和多次弱符号，则按强定义为准
     - 若有多个弱符号定义，则任选其中一个
 
+    例子：
+
+    ```c
+    /*main.c*/
+    #include <stdio.h>
+    int d=100;
+    int x=200;
+    void p1(void);
+    int main() 
+    { 
+        p1();
+        printf(“d=%d,x=%d\n”,d,x);
+        return 0;
+    }
+    
+    /*fun.c*/
+    double d;
+    
+    void p1()
+    {
+        d = 1.0;//FLD1 -> FSTPl &d
+    }
+    ```
+
+    main.c调用p1函数，d在fun模块是double类型，属于弱符号，存放在main模块的d的内存空间，执行d=1.0时，会将1.0的机器数压入浮点寄存器ST(0)（硬堆栈，80位宽），再弹出到main模块的d的内存空间，1.0的十六进制表示为：3FF0 0000 0000 0000H，这样main模块的d，x内存区域被这个十六进制数覆盖，所以d=0,x=1 072 693 248
+
+    
+
 - 符号表
 
   .symtab 节记录符号表信息，是一个结构数组，表项结构如下：
@@ -467,6 +501,7 @@
       unsigned char st_other; 
       Elf32_Half st_shndx;/*符号对应目标所在的节，或其他情况*/
   } Elf32_Sym;
+  
   ```
 
   符号类型（Type）：数据、函数、源文件、节、未知
@@ -475,3 +510,88 @@
 
   其他情况：ABS表示不该被重定位；UND表示未定义；COM表示未初始化数据（.bss），此时，st_value表示对齐要求，st_size给出最小大小
 
+### 0x03 链接
+
+- 链接概述
+  - 符号解析
+    - 程序中有定义和引用的符号 (包括变量和函数等)
+    - 编译器将定义的符号存放在一个符号表（ symbol table，结构数组）中
+    - 链接器将每个符号的引用都与一个确定的符号定义建立关联
+  - 重定位
+    - 将多个代码段与数据段分别合并为一个单独的代码段和数据段
+    - 计算每个定义的符号在虚拟地址空间中的绝对地址
+    - 将可执行文件中符号引用处的地址修改为重定位后的地址信息
+
+- 符号解析
+
+E 将被合并以组成可执行文件的所有目标文件集合
+U 当前所有未解析的引用符号的集合
+D 当前所有定义符号的集合
+
+解析过程：按顺序扫描可重定位目标文件，将定义的符号加入D，未定义的符号加入E，若一开始U为空，则可重定位文件会被丢弃。当找到U中符号的定义时，将其移除U，加入D，扫描完成时，若U为空，则符号解析成功，否则符号解析出错。符号解析的正确结果是得到E、D、空的U
+
+总结步骤：
+
+1. 按照命令行给出的顺序扫描.o 和.a 文件
+2. 扫描期间将当前未解析的引用记录到一个列表U中
+3. 每遇到一个新的.o 或 .a 中的模块，都试图用其来解析U中的符号
+4. 如果扫描到最后，U中还有未被解析的符号，则发生错误
+
+- 符号重定位
+
+  - 合并相同的节
+    - 将集合E的所有目标模块中相同的节合并成新节
+  - 对定义符号进行重定位（确定地址）
+    - 确定新节中所有定义符号在虚拟地址空间中的地址
+    - 完成这一步后，每条指令和每个全局或局部变量都可确定地址
+  - 对引用符号进行重定位（确定地址）
+    - 修改.text节和.data节中对每个符号的引用（地址）,需要用到在.rel_data和.rel_text节中保存的重定位信息
+
+  重定位条目：
+
+  ```
+  typedef struct {
+      int offset;    /*节内偏移*/
+      int symbol:24, /*所绑定符号*/
+      type: 8;       /*重定位类型*/
+  } Elf32_Rel;
+  ```
+  
+IA-32两种最基本的重定位类型：
+  
+R_386_32: 绝对地址
+  R_386_PC32: PC相对地址
+  
+函数引用重定位(R_386_PC32)：
+  
+<img src="./img/12.png" style="zoom:50%;" />
+
+### 0x04 可执行文件加载
+
+- 加载执行流程
+
+<img src="./img/13.png" style="zoom:50%;" />
+
+### 0x05 动态链接
+
+- 加载时动态链接
+
+> 在最后生成可执行文件时还是会进行部分的静态链接
+
+加载器加载可执行文件时发现在其程序头表中有 .interp 段，其中包含了动态链接器路径名 ld-linux.so，因而加载器根据指定路径加载并启动动态链接器运行，动态链接器完成相应的重定位工作，再开始执行相应的指令
+
+- 位置无关代码
+
+要实现动态链接，必须生成PIC代码，链接器无需修改代码即可将共享库加载到任意地址运行
+
+所有引用情况：
+
+<img src="./img/15.png" style="zoom:50%;" />
+
+<img src="./img/16.png" style="zoom:50%;" />
+
+<img src="./img/17.png" style="zoom:50%;" />
+
+<img src="./img/18.png" style="zoom:50%;" />
+
+<img src="./img/19.png" style="zoom:50%;" />
