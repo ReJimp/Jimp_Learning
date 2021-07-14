@@ -295,5 +295,183 @@
 
 ## chapter04 程序的链接
 
+### 0x00 概述
 
+- 程序转换处理过程
+
+  - 预处理(cpp程序处理得到.i文本文件)
+  - 编译(cc1处理得到.s汇编文件)
+  - 汇编(as程序处理得到.o可重定位文件)
+  - 链接(ld程序处理得到可执行文件)
+
+  <img src="./img/6.png" style="zoom:50%;" />
+
+### 0x01 文件分类
+
+- 目标文件
+
+  Windows： PE格式；
+
+  Linux等类UNIX： ELF格式
+
+  - 可重定位目标文件(.o/.obj)
+
+    - 文件格式
+
+    <img src="./img/7.png" style="zoom: 67%;" />
+
+    <img src="./img/8.png" style="zoom: 67%;" />
+
+    - ELF头
+
+    定义了ELF魔数、版本、小端/大端、操作系统平台、目标文件的类型、机器结构类型、程序执行的入口地址、程序头表（段头表）的起始位置和长度、节头表的起始位置和长度等
+
+    ```c
+    #define EI_NIDENT 16
+    typedef struct {
+        unsigned char e_ident[EI_NIDENT];	//魔数 
+        Elf32_Half e_type;					//文件类型
+        Elf32_Half e_machine;				//机器架构
+        Elf32_Word e_version;				//版本
+        Elf32_Addr e_entry;					//程序执行的入口地址，即执行程序时第一条指令的地址
+        Elf32_Off e_phoff;
+        Elf32_Off e_shoff;
+        Elf32_Word e_flags;
+        Elf32_Half e_ehsize;
+        Elf32_Half e_phentsize;
+        Elf32_Half e_phnum;
+        Elf32_Half e_shentsize;
+        Elf32_Half e_shnum;
+        Elf32_Half e_shstrndx;				//.strtab在节表中的索引
+    } Elf32_Ehdr;
+    ```
+
+    - 节头表
+
+    ```c
+    typedef struct {
+        Elf32_Word sh_name;	//节名字符串在.strtab中的偏移
+        Elf32_Word sh_type;	//节类型：无效/代码或数据/符号/字符串/…
+        Elf32_Word sh_flags;//节标志：该节在虚拟空间中的访问属性
+        Elf32_Addr sh_addr;	//虚拟地址：若可被加载，则对应虚拟地址
+        Elf32_Off sh_offset;//在文件中的偏移地址，对.bss节而言则无意义
+        Elf32_Word sh_size;	//节在文件中所占的长度
+        Elf32_Word sh_link;	//sh_link和sh_info用于与链接相关的节（如.rel.text节、.rel.data节、.symtab节等）
+        Elf32_Word sh_info;
+        Elf32_Word sh_addralign;//节的对齐要求
+        Elf32_Word sh_entsize;	//节中每个表项的长度，0表示无固定长度表项
+    } Elf32_Shdr;
+    ```
+
+  - 可执行目标文件(默认为a.out)
+
+    - 文件格式
+
+    <img src="./img/9.png" style="zoom: 67%;" />
+
+    - 磁盘文件到内存的映射关系
+
+    <img src="./img/10.png" style="zoom: 67%;" />
+
+    - 程序头表（segment header table）：指导相同属性的节在内存中合并成段
+
+    ```c
+    重定位typedef struct {
+        Elf32_Word p_type;	//类型
+        Elf32_Off p_offset;	//文件偏移
+        Elf32_Addr p_vaddr;	//虚拟地址
+        Elf32_Addr p_paddr;	//物理地址
+        Elf32_Word p_filesz;//文件大小
+        Elf32_Word p_memsz;	//内存大小
+        Elf32_Word p_flags;	//权限
+        Elf32_Word p_align;	//对齐大小
+    } Elf32_Phdr;
+    ```
+
+  - 共享的目标文件(.so)
+
+    - 静态链接库
+    - 动态链接库
+
+### 0x02 符号、符号表、链接
+
+- 链接概述
+
+  - 符号解析
+    - 程序中有定义和引用的符号 (包括变量和函数等)
+    - 编译器将定义的符号存放在一个符号表（ symbol table，结构数组）中
+    - 链接器将每个符号的引用都与一个确定的符号定义建立关联
+
+  - 重定位
+    - 将多个代码段与数据段分别合并为一个单独的代码段和数据段
+    - 计算每个定义的符号在虚拟地址空间中的绝对地址
+    - 将可执行文件中符号引用处的地址修改为重定位后的地址信息
+
+- 符号
+
+  - 符号定义
+
+  > 局部变量是存放在栈上的，故不包含在内
+
+  ```c
+  int a = 12;
+  int sum(int a, int b)
+  {
+  	return a + b;
+  }
+  ```
+
+  - 符号引用
+
+  ```c
+  a = 1;
+  sum(1, 2);
+  
+  ```
+
+  - 符号类型
+
+    - Global symbols（模块内部定义的全局符号）
+
+    由模块m定义并能被其他模块引用的符号。例如，非static C函数和非static的C全局变量（指不带static的全局变量）
+
+    - External symbols（外部定义的全局符号）
+
+    由其他模块定义并被模块m引用的全局符号
+
+    - Local symbols（本模块的局部符号）
+
+    仅由模块m定义和引用的本地符号。例如，在模块m中定义的带static的C函数和全局变量
+
+  - 强弱全局符号
+
+    - 函数名和已初始化的全局变量名是强符号
+    - 未初始化的全局变量名是弱符号
+
+  - 符号解析规则
+
+    - 强符号不能多次定义
+    - 若一个符号被定义为一次强符号和多次弱符号，则按强定义为准
+    - 若有多个弱符号定义，则任选其中一个
+
+- 符号表
+
+  .symtab 节记录符号表信息，是一个结构数组，表项结构如下：
+
+  ```c
+  typedef struct {
+      Elf32_Word st_name;	/*符号对应字符串在strtab节中的偏移量*/
+      Elf32_Addr st_value;/*在对应节中的偏移量，或虚拟地址*/
+      Elf32_Word st_size;	/*符号对应目标字节数，即函数大小或变量长度*/
+      unsigned char st_info; /*指出符号的类型(Type)和绑定属性(Bind) */
+      unsigned char st_other; 
+      Elf32_Half st_shndx;/*符号对应目标所在的节，或其他情况*/
+  } Elf32_Sym;
+  ```
+
+  符号类型（Type）：数据、函数、源文件、节、未知
+
+  绑定属性（Bind）：全局符号、局部符号、弱符号
+
+  其他情况：ABS表示不该被重定位；UND表示未定义；COM表示未初始化数据（.bss），此时，st_value表示对齐要求，st_size给出最小大小
 
