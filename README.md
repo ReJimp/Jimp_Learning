@@ -8,7 +8,7 @@
 
 ## 第2周(2021.7.13-2021.7.19)
 
-> 作业：完成CSAPP所有Lab
+> 作业：完成CSAPP的cache/malloc/proxy lab
 
 
 
