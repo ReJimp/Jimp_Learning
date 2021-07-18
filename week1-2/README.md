@@ -1,3 +1,5 @@
+# 计算机系统基础笔记
+
 * [计算机系统基础笔记](#计算机系统基础笔记)
   * [chapter02 数据的机器级表示与处理](#chapter02-数据的机器级表示与处理)
     * [0x00 数值概念](#0x00-数值概念)
@@ -17,8 +19,8 @@
     * [0x00 CPU基本概念](#0x00-cpu基本概念)
     * [0x01 CPU执行指令过程概述](#0x01-cpu执行指令过程概述)
   * [chapter06 层次结构存储系统](#chapter06-层次结构存储系统)
-
-# 计算机系统基础笔记
+    * [0x01 高速缓存](#0x01-高速缓存)
+    * [0x02 虚拟存储器](#0x02-虚拟存储器)
 
 ## chapter02 数据的机器级表示与处理
 
@@ -641,5 +643,87 @@ R_386_32: 绝对地址
 
 ## chapter06 层次结构存储系统
 
+### 0x01 高速缓存
 
+- 存储器的层次结构
+
+<img src="./img/21.png" style="zoom:50%;" />
+
+- 时间局部性&空间局部性
+
+  - 时间局部性：刚被访问过的单元很可能不久又被访问
+  - 空间局部性：刚被访问过的单元的邻近单元很可能不久被访问
+  - 编写局部性良好的程序
+
+  ```c
+  程序段A:
+  int sumarrayrows(int a[M][N])
+  {
+      int i, j, sum=0;
+      for (i=0; i<M, i++)
+      for (j=0; j<N, j++) sum+=a[i][j];
+      return sum;
+  }
+  
+  程序段B:
+  int sumarraycols(int a[M][N])
+  {
+      int i, j, sum=0;
+      for (j=0; j<N, j++)
+      for (i=0; i<M, i++) sum+=a[i][j];
+      return sum;
+  }
+  
+  程序A：59,393,288 时钟周期
+  程序B：1,277,877,876 时钟周期
+  ```
+
+  由以上结果可得：数组元素按顺序存放，按顺序访问，空间局部性好，执行速度更优
+
+- Cache
+
+  - 操作示意图
+
+  <img src="./img/22.png" style="zoom:50%;" />
+
+  - 三种映射方式
+
+    - 直接映射：每个主存块映射到Cache的固定行
+
+    <img src="./img/23.png" style="zoom:50%;" />
+
+    - 全相联映射：每个主存块映射到Cache的任一行
+
+    <img src="./img/24.png" style="zoom:50%;" />
+
+    - 组相联映射：每个主存块映射到Cache固定组中任一行
+
+    <img src="./img/25.png" style="zoom:50%;" />
+
+  - Cache替换算法
+
+    - 先进先出FIFO （first-in-first-out）
+      - 总是把最先进入的那一块淘汰掉
+      - 非栈算法，命中率并不随组的增大而提高
+    - 最近最少用LRU （ least-recently used）
+      - 每个cache行设定一个计数器(LRU位)，根据计数值来记录这些主存块的使用情况
+      - 栈算法，命中率随组的增大而提高
+    - 最不经常用LFU （ least-frequently used）
+    - 随机替换算法（Random）
+  
+  - Cache写策略
+  
+    - 写命中（Write Hit）：要写的单元已经在Cache中
+      - Write Through (通过式写、写直达、直写)
+        - 同时写Cache和主存单元
+      - Write Back (一次性写、写回、回写)
+        - 只写cache不写主存，缺失时一次写回，每行有个修改位（“dirty bit-脏位”），大大降低主存带宽需求，控制可能很复杂
+    - 写不命中（Write Miss）：要写的单元不在Cache中
+      - Write Allocate (写分配)
+        - 将主存块装入Cache，然后更新相应单元
+        - 试图利用空间局部性，但每次都要从主存读一个块
+      - Not Write Allocate (非写分配)
+        - 直接写主存单元，不把主存块装入到Cache
+
+### 0x02 虚拟存储器
 
