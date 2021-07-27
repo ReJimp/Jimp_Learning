@@ -25,7 +25,7 @@ struct _List_iterator_base {
 	_List_node_base* _M_node;
 
 	_List_iterator_base(_List_node_base* __x) : _M_node(__x) {}
-	_List_node_base() { }
+	_List_iterator_base() { }
 
 	void _M_incr() {
 		_M_node = _M_node->_M_next;
@@ -40,6 +40,7 @@ struct _List_iterator_base {
 	bool operator!=(const _List_iterator_base& __x) const {
 		return _M_node != __x._M_node;
 	}
+
 };
 
 template<class _Tp, class _Ref, class _Ptr>
@@ -82,6 +83,7 @@ struct _List_iterator : public _List_iterator_base {
 		this->_M_decr();
 		return __tmp;
 	}
+
 };
 
 inline bidirectional_iterator_tag
@@ -133,6 +135,7 @@ protected:
 
 protected:
 	_List_node<_Tp>* _M_node;
+
 };
 
 template <class _Tp, class _Alloc>
@@ -188,8 +191,7 @@ protected:
 	_Node* _M_create_node(const _Tp& __x)
 	{
 		_Node* __p = _M_get_node();
-		__STL_TRY
-		{
+		__STL_TRY {
 			_Construct(&__p->_M_data, __x);
 		}
 		__STL_UNWIND(_M_put_node(__p));
@@ -400,6 +402,7 @@ public:
 	void merge(list& __x);
 	void reverse();
 	void sort();
+
 };
 
 template <class _Tp, class _Alloc>
