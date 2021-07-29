@@ -3,7 +3,7 @@
 #ifndef JIMP_STL__STL_DEQUE_H
 #define JIMP_STL__STL_DEQUE_H
 
-#include "stl-config.h"
+#include "stl_config.h"
 
 __STL_BEGIN_NAMESPACE
 
