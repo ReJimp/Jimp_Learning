@@ -22,3 +22,10 @@
 - HEVD只完成StackOverflowGS
 - 学习开发相关时Pwn不小心落下，下周要开始刷Pwn了(补起来
 
+## 第4周(2021.7.27-2021.8.2)
+
+> 主要任务：STL&Codeql
+
+- 理解functor、adaptor
+- HEVD只完成WWW
+- codeql完成codeql-uboot以及基础语法学习，后续需要结合实际漏洞进行学习
