@@ -7,14 +7,14 @@
 from ctypes import *
 
 # macro like win32
-WORD        = c_ushort
-DWORD       = c_ulong
-ULONG_PTR   = c_ulong
-LPBYTE      = POINTER(c_ubyte)
-LPTSTR      = POINTER(c_char)
-HANDLE      = c_void_p
-PVOID       = c_void_p
-LPVOID      = c_void_p
+WORD        =   c_ushort
+DWORD       =   c_ulong
+ULONG_PTR   =   c_ulong
+LPBYTE      =   POINTER(c_ubyte)
+LPTSTR      =   POINTER(c_char)
+HANDLE      =   c_void_p
+PVOID       =   c_void_p
+LPVOID      =   c_void_p
 
 # const value
 DEBUG_PROCESS           =   0x00000001
@@ -59,13 +59,13 @@ class PROCESS_INFORMATION(Structure):
 class EXCEPTION_RECORD(Structure):
     pass
 
-EXCEPTION_RECORD._fields = [
-        ("ExceptionCode", DWORD),
-        ("ExceptionFlags", DWORD),
-        ("ExceptionRecord", POINTER(EXCEPTION_RECORD)),
-        ("ExceptionAddress", PVOID),
-        ("NumberParameters", DWORD),
-        ("ExceptionInformation", ULONG_PTR * 15)
+EXCEPTION_RECORD._fields_ = [
+        ("ExceptionCode",           DWORD),
+        ("ExceptionFlags",          DWORD),
+        ("ExceptionRecord",         POINTER(EXCEPTION_RECORD)),
+        ("ExceptionAddress",        PVOID),
+        ("NumberParameters",        DWORD),
+        ("ExceptionInformation",    ULONG_PTR * 15)
     ]
 
 class EXCEPTION_RECORD(Structure):

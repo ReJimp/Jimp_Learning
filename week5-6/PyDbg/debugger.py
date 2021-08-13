@@ -37,7 +37,7 @@ class debugger():
                                    byref(startupinfo),
                                    byref(process_information)):
 
-            print("[+] We have successfully lauched the process!")
+            print("[+] Successfully lauched the process :)")
             print("[+] PID: %d" % process_information.dwProcessId)
         else:
             print("[-] Error: 0x%08x" % kernel32.GetLastError())
@@ -57,7 +57,7 @@ class debugger():
             self.pid             = int(pid)
             self.run()
         else:
-            print("[-] Unable to attach the target process")
+            print("[-] Unable to attach the target process :(")
 
     def run(self):
         while self.debugger_active == True:
@@ -68,7 +68,7 @@ class debugger():
         continue_status = DBG_CONTINUE
 
         if kernel32.WaitForDebugEvent(byref(debug_event), INFINITE):
-            input("press a key to continue...\n")
+            input("Press a key to continue:\n")
             self.debugger_active = False
             kernel32.ContinueDebugEvent(
                 debug_event.dwProcessId,
@@ -78,7 +78,7 @@ class debugger():
 
     def detach(self):
         if kernel32.DebugActiveProcessStop(self.pid):
-            print("[+] Finished debugging...")
+            print("[+] Finished debugging :)")
             return True
         else:
             print("There was an error")

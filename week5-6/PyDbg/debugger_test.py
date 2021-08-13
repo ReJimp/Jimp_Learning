@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2021/8/12 18:24
 # @Author  : Jimp
-# @File    : my_test.py
+# @File    : debugger_test.py
 
 import debugger
 
