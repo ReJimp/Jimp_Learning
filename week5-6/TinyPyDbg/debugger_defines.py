@@ -12,6 +12,7 @@ WORD        =   c_ushort
 LONG        =   c_long
 DWORD       =   c_ulong
 ULONG_PTR   =   c_ulong
+SIZE_T      =   c_ulong
 LPBYTE      =   POINTER(c_ubyte)
 LPTSTR      =   POINTER(c_char)
 HANDLE      =   c_void_p
@@ -24,13 +25,14 @@ CREATE_NEW_CONSOLE             =    0x00000010
 STARTF_USESHOWWINDOW           =    0x00000001
 
 # const value for OpenProcess
-PROCESS_ALL_ACCESS             =    0x001F0FFF
+PROCESS_ALL_ACCESS             =    0x001FFFFF
 
 # const value for WaitForDebugEvent
 INFINITE                       =    0xFFFFFFFF
 
 # const value for ContinueDebugEvent
 DBG_CONTINUE                   =    0x00010002
+DBG_EXCEPTION_NOT_HANDLED      =    0x80010001
 
 # const value for OpenThread
 THREAD_ALL_ACCESS              =    0x001FFFFF
@@ -58,6 +60,24 @@ EXCEPTION_ACCESS_VIOLATION     = 0xC0000005
 EXCEPTION_BREAKPOINT           = 0x80000003
 EXCEPTION_GUARD_PAGE           = 0x80000001
 EXCEPTION_SINGLE_STEP          = 0x80000004
+
+# const value for hardware breakpoints contion
+HW_ACCESS   = 0x00000003
+HW_EXECUTE  = 0x00000000
+HW_WRITE    = 0x00000001
+
+# const value for protection
+PAGE_NOACCESS                  = 0x00000001
+PAGE_READONLY                  = 0x00000002
+PAGE_READWRITE                 = 0x00000004
+PAGE_WRITECOPY                 = 0x00000008
+PAGE_EXECUTE                   = 0x00000010
+PAGE_EXECUTE_READ              = 0x00000020
+PAGE_EXECUTE_READWRITE         = 0x00000040
+PAGE_EXECUTE_WRITECOPY         = 0x00000080
+PAGE_GUARD                     = 0x00000100
+PAGE_NOCACHE                   = 0x00000200
+PAGE_WRITECOMBINE              = 0x00000400
 
 # structure for CreateProcessA
 class STARTUPINFO(Structure):
@@ -194,3 +214,43 @@ class CONTEXT(Structure):
         ("SegSs",               DWORD),
         ("ExtendedRegisters",   BYTE * 512)
     ]
+
+# structure for GetSystemInfo
+class PROC_STRUCT(Structure):
+    _fields_ = [
+        ("wProcessorArchitecture",    WORD),
+        ("wReserved",                 WORD),
+]
+
+class SYSTEM_INFO_UNION(Union):
+    _fields_ = [
+        ("dwOemId",    DWORD),
+        ("sProcStruc", PROC_STRUCT),
+]
+
+class SYSTEM_INFO(Structure):
+    _fields_ = [
+        ("uSysInfo",                    SYSTEM_INFO_UNION),
+        ("dwPageSize",                  DWORD),
+        ("lpMinimumApplicationAddress", LPVOID),
+        ("lpMaximumApplicationAddress", LPVOID),
+        ("dwActiveProcessorMask",       DWORD),
+        ("dwNumberOfProcessors",        DWORD),
+        ("dwProcessorType",             DWORD),
+        ("dwAllocationGranularity",     DWORD),
+        ("wProcessorLevel",             WORD),
+        ("wProcessorRevision",          WORD),
+]
+
+# structure for VirtualQueryEx
+class MEMORY_BASIC_INFORMATION(Structure):
+    _fields_ = [
+        ("BaseAddress", PVOID),
+        ("AllocationBase", PVOID),
+        ("AllocationProtect", DWORD),
+        ("RegionSize", SIZE_T),
+        ("State", DWORD),
+        ("Protect", DWORD),
+        ("Type", DWORD),
+]
+
