@@ -1,5 +1,7 @@
 # 天问之路
 
+------
+
 ## 第1周(2021.7.6-2021.7.12)
 
 > 主要任务：csapp
@@ -56,5 +58,16 @@
 
 ## 第9周(2021.8.31-2021.9.6)
 
-> 主要任务：操作系统真象还原&advance codeql&IDA Plugin&Unix环境编程
+> 主要任务：Unix环境编程
+
+- 学校课程实在多，一时间居然没跑掉
+- 阅读WIndows Kernel Pool(暂时win7)的slides
+- 环境编程仅抄写完头文件
+
+------
+
+## Todo List
+
+- Top：MIT6.828&操作系统真象还原&codeql&HEVD
+- High：IDA plugin&Fuzzing101&sqlite
 
