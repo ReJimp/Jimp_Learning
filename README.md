@@ -62,6 +62,7 @@
 
 - 学校课程实在多，一时间居然没跑掉
 - 阅读WIndows Kernel Pool(暂时win7)的slides
+- AFL源码阅读完afl-gcc、afl-as
 - 环境编程仅抄写完头文件
 
 ------
