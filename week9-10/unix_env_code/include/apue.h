@@ -5,31 +5,24 @@
 
 #define _POSIX_C_SOURCE 200809L
 
-#if defined(SOLARIS)
-#define _XOPEN_SOURCE 600
-#else
-#define _XOPEN_SOURCE 700
-#endif
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/termios.h>
-
-#if defined(MACOS) || !defined(TIOCGWINSZ)
-#include <sys/itocl.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <process.h>
+#include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #define MAXLINE 4096
+//default file right
 #define FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)
+//default dir right
 #define DIR_MODE (FILE_MODE | S_IXUSR | S_IXGRP | S_IXOTH)
 
+//defined signal function
 typedef void Sigfunc(int);
 
 #define min(a, b) {(a) < (b) ? (a) : (b)}
@@ -44,10 +37,10 @@ void set_fl(int, int);
 
 void pr_exit(int);
 
-void pr_mask(int);
-Sigfunc *signal_intr(int, Sigfunc*);
+void pr_mask(const char *);
+Sigfunc *signal_intr(int, Sigfunc *);
 
-void daemonize(const char*);
+void daemonize(const char *);
 
 void sleep_us(unsigned int);
 ssize_t readn(int, void *, size_t);
@@ -60,7 +53,7 @@ int send_err(int, int, const char *);
 int serv_listen(const char *);
 int serv_accept(int, uid_t *);
 int cli_conn(const char *);
-int buf_args(char*, int (*func)(int, char **));
+int buf_args(char *, int (*func)(int, char **));
 int tty_cbreak(int);
 int tty_raw(int);
 int tty_reset(int);

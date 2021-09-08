@@ -1,5 +1,5 @@
 // Created by Jimp on 2021/9/6.
-#include "apue.h"
+#include "include/apue.h"
 #include <errno.h>
 #include <stdarg.h>
 #include <syslog.h>
@@ -8,13 +8,15 @@ static void log_doit(int, int, int, const char *, va_list ap);
 
 extern int log_to_stderr;
 
-void log_open(const char *ident, int option, int facility)
+void
+log_open(const char *ident, int option, int facility)
 {
   if(log_to_stderr == 0)
     openlog(ident, option, facility);
 }
 
-void log_ret(const char *fmt, ...)
+void
+log_ret(const char *fmt, ...)
 {
   va_list ap;
 
@@ -23,7 +25,8 @@ void log_ret(const char *fmt, ...)
   va_end(ap);
 }
 
-void log_sys(const char *fmt, ...)
+void
+log_sys(const char *fmt, ...)
 {
   va_list ap;
 
@@ -33,7 +36,8 @@ void log_sys(const char *fmt, ...)
   exit(2);
 }
 
-void log_msg(const char *fmt, ...)
+void
+log_msg(const char *fmt, ...)
 {
   va_list ap;
 
@@ -42,7 +46,8 @@ void log_msg(const char *fmt, ...)
   va_end(ap);
 }
 
-void log_quit(const char *fmt, ...)
+void
+log_quit(const char *fmt, ...)
 {
   va_list ap;
 
@@ -52,7 +57,8 @@ void log_quit(const char *fmt, ...)
   exit(2);
 }
 
-void log_exit(int error, const char *fmt, ...)
+void
+log_exit(int error, const char *fmt, ...)
 {
   va_list ap;
 
@@ -62,7 +68,8 @@ void log_exit(int error, const char *fmt, ...)
   exit(2);
 }
 
-static void log_doit(int errnoflag, int error, int priority, const char *fmt, va_list ap)
+static void
+log_doit(int errnoflag, int error, int priority, const char *fmt, va_list ap)
 {
   char buf[MAXLINE];
 
