@@ -1,6 +1,7 @@
-// Created by Jimp on 2021/9/9.
-#include "include/apue.h"
+#include "apue.h"
 #include <sys/wait.h>
+
+static void sig_int(int);
 
 int main()
 {
@@ -8,10 +9,14 @@ int main()
   pid_t pid;
   int status;
 
+  if(signal(SIGINT, sig_int) == SIG_ERR)
+    err_sys("signal error");
+
   printf("%% ");
   while (fgets(buf, MAXLINE, stdin) != NULL) {
-    if(buf[strlen(buf) - 1] == '\n')
+    if (buf[strlen(buf) - 1] == '\n') {
       buf[strlen(buf) - 1] = 0;
+    }
 
     if((pid = fork()) < 0) {
       err_sys("fork error");
@@ -25,5 +30,6 @@ int main()
       err_sys("waitpid error");
     printf("%% ");
   }
+
   exit(0);
 }

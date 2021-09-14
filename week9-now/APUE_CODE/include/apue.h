@@ -1,5 +1,3 @@
-// Created by Jimp on 2021/9/6.
-
 #ifndef UNIX_ENV_CODE__APUE_H
 #define UNIX_ENV_CODE__APUE_H
 
@@ -11,7 +9,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
-#include <process.h>
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>

@@ -1,5 +1,4 @@
-// Created by Jimp on 2021/9/9.
-#include "include/apue.h"
+#include "apue.h"
 
 #define BUFFSIZE 4096
 

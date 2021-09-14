@@ -1,5 +1,4 @@
-// Created by Jimp on 2021/9/6.
-#include "include/apue.h"
+#include "apue.h"
 #include <errno.h>
 #include <stdarg.h>
 #include <syslog.h>
