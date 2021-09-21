@@ -5,12 +5,10 @@ LOADER_BASE_ADDR  equ 0x900
 ;-----------------gdt描述符属性----------------
 DESC_G_4k         equ 1_00000000000000000000000b
 DESC_D_32         equ  1_0000000000000000000000b
-DESC_L            equ   0_000000000000000000000b
-;标记为32位代码
-DESC_AVL          equ    0_00000000000000000000b
-;CPU不用此位,置0
+DESC_L            equ   0_000000000000000000000b    ;标记为32位代码
+DESC_AVL          equ    0_00000000000000000000b    ;CPU不用此位,置0
 DESC_LIMIT_CODE2  equ     1111_0000000000000000b
-DESC_LIMIT_DATA2  equ DESC_LIMIT_CODE2
+DESC_LIMIT_DATA2  equ           DESC_LIMIT_CODE2
 DESC_LIMIT_VIDEO2 equ      0000_000000000000000b
 DESC_P            equ         1_000000000000000b
 DESC_DPL_0        equ          00_0000000000000b 
@@ -18,12 +16,10 @@ DESC_DPL_1        equ          01_0000000000000b
 DESC_DPL_2        equ          10_0000000000000b 
 DESC_DPL_3        equ          11_0000000000000b 
 DESC_S_CODE       equ            1_000000000000b 
-DESC_S_DATA       equ DESC_S_CODE 
+DESC_S_DATA       equ                DESC_S_CODE 
 DESC_S_sys        equ            0_000000000000b 
-DESC_TYPE_CODE    equ             1000_00000000b
-;x=1,c=0,r=0,a=0代码段时可执行的,非一致性,不可读,已访问位a清0
-DESC_TYPE_DATA    equ             0010_00000000b
-;x=0,e=0,w=1,a=0数据段是不可执行的,向上扩展的,可写,已访问位a清0
+DESC_TYPE_CODE    equ             1000_00000000b    ;x=1,c=0,r=0,a=0代码段时可执行的,非一致性,不可读,已访问位a清0
+DESC_TYPE_DATA    equ             0010_00000000b    ;x=0,e=0,w=1,a=0数据段是不可执行的,向上扩展的,可写,已访问位a清0
 DESC_CODE_HIGH4   equ   (0x00 << 24) + DESC_G_4k + DESC_D_32 + \
                         DESC_L + DESC_AVL + DESC_LIMIT_CODE2 + \
                         DESC_P + DESC_DPL_0 + DESC_S_CODE    + \
