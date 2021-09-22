@@ -156,44 +156,35 @@ p_mode_start:
     mov ax, SELECTOR_VIDEO
     mov gs, ax
 
-    mov byte [gs:0x00], 'J'
-    mov byte [gs:0x01], 0xA4
+    ; 创建页目录及页表并初始化页内存位图
+    call setup_page
 
-    mov byte [gs:0x02], 'i'
-    mov byte [gs:0x03], 0xA4
+    ; 将描述符表地址及偏移量写入内存gdt_ptr
+    sgdt [gdt_ptr]
+    
+    ; 获取GDT及地址
+    mov ebx, [gdt_ptr + 2]
+    ; 修改显存的基地址
+    or dword [ebx + 0x18 + 4], 0xc0000000
+    ; 修改GDT的基地址
+    add dword [gdt_ptr + 2], 0xc0000000
+    ; 修改栈指针地址
+    add esp, 0xc0000000
+    
+    ; 开启cr0的pg位(第31位)
+    mov eax, cr0
+    or eax, 80000000
+    mov cr0, eax
 
-    mov byte [gs:0x04], 'm'
-    mov byte [gs:0x05], 0xA4
+    lgdt [gdt_ptr]
 
-    mov byte [gs:0x06], 'p'
-    mov byte [gs:0x07], 0xA4
-
-    mov byte [gs:0x08], ' '
-    mov byte [gs:0x09], 0xA4
-
-    mov byte [gs:0x0A], 'i'
-    mov byte [gs:0x0B], 0xA4
-
-    mov byte [gs:0x0C], 'n'
-    mov byte [gs:0x0D], 0xA4
-
-    mov byte [gs:0x0E], ' '
-    mov byte [gs:0x0F], 0xA4
-
-    mov byte [gs:0x10], 'p'
-    mov byte [gs:0x11], 0xA4
-
-    mov byte [gs:0x12], 'm'
-    mov byte [gs:0x13], 0xA4
-
-    mov byte [gs:0x14], 'o'
-    mov byte [gs:0x15], 0xA4
-
-    mov byte [gs:0x16], 'd'
-    mov byte [gs:0x17], 0xA4
-
-    mov byte [gs:0x18], 'e'
-    mov byte [gs:0x19], 0xA4
+    mov byte [gs:160], 'V'
+    mov byte [gs:162], 'i'
+    mov byte [gs:164], 'r'
+    mov byte [gs:166], 't'
+    mov byte [gs:168], 'u'
+    mov byte [gs:170], 'a'
+    mov byte [gs:172], 'l'
 
     jmp $
 
