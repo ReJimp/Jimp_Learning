@@ -12,27 +12,31 @@ CODE_DESC:          dd 0x0000FFFF
 DATA_STACK_DESC:    dd 0x0000FFFF
                     dd DESC_DATA_HIGH4
 
-VIDEO_DESC:         dd 0x80000007        ; limit=(0xbffff-0xb8000) / 4K = 0x7
-                    dd DESC_VIDEO_HIGH4  ; dpl=0
+VIDEO_DESC:         dd 0x80000007                   ; limit=(0xbffff-0xb8000) / 4K = 0x7
+                    dd DESC_VIDEO_HIGH4             ; dpl=0
+
 
 GDT_SIZE    equ     $ - GDT_BASE
 GDT_LIMIT   equ     GDT_SIZE - 1
-times       60      dq         0         ; 预留60个描述符
+times       60      dq         0                    ; 预留60个描述符
 
-total_mem_bytes     dd 0                 ; 位于内存0xb00处，记录内存容量
+
+total_mem_bytes     dd 0                            ; 位于内存0xb00处，记录内存容量
 
 ; 相当于(CODE_DESC - GDT_BASE) / 8 + TI_GDT + RPL0        
 SELECTOR_CODE   equ     (0x0001 << 3) + TI_GDT + RPL0   
 SELECTOR_DATA   equ     (0x0002 << 3) + TI_GDT + RPL0
 SELECTOR_VIDEO  equ     (0x0003 << 3) + TI_GDT + RPL0
 
+
 ; 以下时gdt的指针,前两字节是gdt界限,后4字节是gdt的起始地址
 gdt_ptr             dw GDT_LIMIT
                     dd GDT_BASE
 
+
 ; 对齐到256字节：total_mem_bytes + gdt_ptr + ards_buf + ards_nr = 4 + 6 + 244 + 2 = 256 = 0x100
 ards_buf times 244 db 0
-ards_nr  dw    0                         ; 记录ards结构体数量
+ards_nr  dw    0                                    ; 记录ards结构体数量
 
 loader_start:
 
@@ -40,18 +44,18 @@ loader_start:
 ; ------------------------------------------------
 ; int 0x15;eax=0000E820h;edx=534D4150h('SMAP')
 ; ------------------------------------------------
-    xor ebx, ebx                         ; 首次调用需将ebx置0
-    mov edx, 0x534D4150                  ; edx赋值为'SMAP'，后续不改变
-    mov di, ards_buf                     ; ards结构缓冲区
-.e820_mem_get_loop:                      ; 循环获取调用返回的ards结构体
-    mov eax, 0x0000E820                  ; 子调用号，调用后eax的值变为0x534d4150
-    mov ecx, 20                          ; ards结构体大小
+    xor ebx, ebx                                    ; 首次调用需将ebx置0
+    mov edx, 0x534D4150                             ; edx赋值为'SMAP'，后续不改变
+    mov di, ards_buf                                ; ards结构缓冲区
+.e820_mem_get_loop:                                 ; 循环获取调用返回的ards结构体
+    mov eax, 0x0000E820                             ; 子调用号，调用后eax的值变为0x534d4150
+    mov ecx, 20                                     ; ards结构体大小
     int 0x15
-    jc .e820_failed_so_try_e801          ; cf为1说明发生错误，改为调用0xe801
+    jc .e820_failed_so_try_e801                     ; cf为1说明发生错误，改为调用0xe801
     
-    add di, cx                           ; ards缓冲区指针偏移20字节
-    inc word [ards_nr]                   ; ards结构体数量ards_nr增1
-    cmp ebx, 0                           ; 此时ebx为0时说明已返回所有ards
+    add di, cx                                      ; ards缓冲区指针偏移20字节
+    inc word [ards_nr]                              ; ards结构体数量ards_nr增1
+    cmp ebx, 0                                      ; 此时ebx为0时说明已返回所有ards
     jnz .e820_mem_get_loop
 
 ; 遍历所有ards，找到最大的(base_add_low + length_low)，即可得到内存的容量
@@ -59,13 +63,14 @@ loader_start:
     mov ebx, ards_buf
     xor edx, edx
 .find_max_mem_area:
-    mov eax, [ebx]                       ; BaseAddrLow
-    add eax, [ebx + 8]                   ; BaseAddrHigh
-    add ebx, 20                          ; 指针指向下一个ards结构
+    mov eax, [ebx]                                  ; BaseAddrLow
+    add eax, [ebx + 8]                              ; BaseAddrHigh
+    add ebx, 20                                     ; 指针指向下一个ards结构
     cmp edx, eax
     jge .next_ards
     mov edx, eax
-.next_ards
+
+.next_ards:
     loop .find_max_mem_area
     jmp .mem_get_ok
 
@@ -78,21 +83,21 @@ loader_start:
 .e820_failed_so_try_e801:
     mov ax, 0xE801
     int 0x15
-    jc .e801_failed_so_try88             ; cf为1说明发生错误，改为调用0x88
+    jc .e801_failed_so_try88                        ; cf为1说明发生错误，改为调用0x88
     ; 计算低16MB
-    mov cx, 0x400                        ; 换算成字节
+    mov cx, 0x400                                   ; 换算成字节
     mul cx
-    shl edx, 16                          ; 计算结果高位在dx,低位在ax
+    shl edx, 16                                     ; 计算结果高位在dx,低位在ax
     and eax, 0x0000FFFF
     or edx, eax
-    add edx, 0x100000                    ; 加上1MB
+    add edx, 0x100000                               ; 加上1MB
     mov esi, edx
     ; 计算16MB~4GB
     xor eax, eax
     mov ax, bx
     mov ecx, 0x10000
     mul ecx
-    add esi, eax                         ; 高位edx为0
+    add esi, eax                                    ; 高位edx为0
     mov edx, esi
     jmp .mem_get_ok
 
@@ -115,6 +120,10 @@ loader_start:
 .mem_get_ok:
     mov [total_mem_bytes], edx
 
+.error_hlt:
+    hlt
+
+
 ; ------------------------------------------------
 ;               准备进入保护模式
 ; ------------------------------------------------
@@ -123,20 +132,19 @@ loader_start:
 ; 3 CR0的PE位置1
 ; ------------------------------------------------
 
-; ------------------打开A20-----------------------
+; ------------------打开A20------------------------
     in al, 0x92
     or al, 0000_0010b
     out 0x92, al
 
-; ------------------加载GDT----------------------
+; ------------------加载GDT------------------------
     lgdt [gdt_ptr]
 
-; -----------------cr0第0位置1-------------------
+; -----------------cr0第0位置1---------------------
     mov eax, cr0
     or eax, 0x00000001
     mov cr0, eax
-
-    jmp dword SELECTOR_CODE:p_mode_start    ;刷新流水线
+    jmp dword SELECTOR_CODE:p_mode_start            ; 刷新流水线
 
 [bits 32]
 p_mode_start:
@@ -188,3 +196,49 @@ p_mode_start:
     mov byte [gs:0x19], 0xA4
 
     jmp $
+
+; ---------------创建页目录以及页表-------------------
+setup_page:
+; 页目录初始化为0
+    mov ecx, 0x1000                                 ; 页目录大小0x1000                 
+    mov esi, 0
+.clear_page_dir:
+    mov byte [PAGE_DIR_TABLE_POS + esi], 0
+    inc esi
+    loop .clear_page_dir
+
+; 创建第一个页目录项(PDE)
+.create_pde:  
+    mov eax, PAGE_DIR_TABLE_POS          
+    add eax, 0x1000
+    mov ebx, eax
+
+    or eax, PG_US_U | PG_RW_W | PG_P                ; 属性为7,US=1,RW=1,P=1   
+    mov [PAGE_DIR_TABLE_POS + 0x0], eax
+    mov [PAGE_DIR_TABLE_POS + 0xc00], eax           ; 第0和第768个页目录项都指向第一个页表，0~768所指为低3GB空间，769~1022所指为高1GB空间
+    sub eax, 0x1000
+    mov [PAGE_DIR_TABLE_POS + 0x1000 - 0x4], eax    ; 最后一个页目录项指向自身
+
+; 创建页表
+    mov ecx, 256                                    ; 1M 低端内存 / 每页大小 4k = 256
+    mov esi, 0
+    mov edx, PG_US_U | PG_RW_W | PG_P
+.crete_pte:
+    mov [ebx + esi * 4], edx
+    add edx, 4096                                   ; 页表每项指向4KB
+    inc esi
+    loop .crete_pte
+
+; 创建内核页表的页目录项
+    mov eax, PAGE_DIR_TABLE_POS
+    add eax, 0x2000
+    or eax, PG_US_U | PG_RW_W | PG_P
+    mov ebx, PAGE_DIR_TABLE_POS
+    mov ecx, 254                                    ; 范围为第769~1022的所有目录项数量
+    mov esi, 769                                    ; 内核区域的起始页目录
+.create_kernel_pde:
+    mov [ebx + esi * 4], eax
+    inc esi
+    add eax, 0x1000
+    loop .create_kernel_pde
+    ret
