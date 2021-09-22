@@ -21,7 +21,7 @@ GDT_LIMIT   equ     GDT_SIZE - 1
 times       60      dq         0                    ; 预留60个描述符
 
 
-total_mem_bytes     dd 0                            ; 位于内存0xb00处，记录内存容量
+total_mem_bytes     dd         0                    ; 位于内存0xb00处，记录内存容量
 
 ; 相当于(CODE_DESC - GDT_BASE) / 8 + TI_GDT + RPL0        
 SELECTOR_CODE   equ     (0x0001 << 3) + TI_GDT + RPL0   
@@ -120,9 +120,6 @@ loader_start:
 .mem_get_ok:
     mov [total_mem_bytes], edx
 
-.error_hlt:
-    hlt
-
 
 ; ------------------------------------------------
 ;               准备进入保护模式
@@ -145,6 +142,9 @@ loader_start:
     or eax, 0x00000001
     mov cr0, eax
     jmp dword SELECTOR_CODE:p_mode_start            ; 刷新流水线
+
+.error_hlt:
+    hlt
 
 [bits 32]
 p_mode_start:
@@ -171,20 +171,32 @@ p_mode_start:
     ; 修改栈指针地址
     add esp, 0xc0000000
     
+    ; 把页目录地址给cr3
+    mov eax, PAGE_DIR_TABLE_POS
+    mov cr3, eax
+
     ; 开启cr0的pg位(第31位)
     mov eax, cr0
-    or eax, 80000000
+    or eax, 0x80000000
     mov cr0, eax
 
+    ; 重新加载gdt
     lgdt [gdt_ptr]
 
     mov byte [gs:160], 'V'
+    mov byte [gs:161], 0x41
     mov byte [gs:162], 'i'
+    mov byte [gs:163], 0x41
     mov byte [gs:164], 'r'
+    mov byte [gs:165], 0x41
     mov byte [gs:166], 't'
+    mov byte [gs:167], 0x41
     mov byte [gs:168], 'u'
+    mov byte [gs:169], 0x41
     mov byte [gs:170], 'a'
+    mov byte [gs:171], 0x41
     mov byte [gs:172], 'l'
+    mov byte [gs:173], 0x41
 
     jmp $
 
@@ -214,11 +226,11 @@ setup_page:
     mov ecx, 256                                    ; 1M 低端内存 / 每页大小 4k = 256
     mov esi, 0
     mov edx, PG_US_U | PG_RW_W | PG_P
-.crete_pte:
+.create_pte:
     mov [ebx + esi * 4], edx
     add edx, 4096                                   ; 页表每项指向4KB
     inc esi
-    loop .crete_pte
+    loop .create_pte
 
 ; 创建内核页表的页目录项
     mov eax, PAGE_DIR_TABLE_POS
