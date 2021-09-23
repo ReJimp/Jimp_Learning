@@ -69,7 +69,7 @@ SECTION MBR vstart=0x7c00
     mov cx, 4                       ; 待读入的扇区数
     call rd_disk_m_16               ; 以下读取程序的起始部分
 
-    jmp LOADER_BASE_ADDR + 0x300
+    jmp LOADER_BASE_ADDR + 0x300    ; 仍然是实模式
 
 ;-------------------------------------------------
 ;功能：读取硬盘n个扇区
@@ -137,6 +137,7 @@ rd_disk_m_16:
         mov [bx], ax
         add bx, 2
         loop .go_on_read
+
         ret
         
 times 510-($-$$) db 0
