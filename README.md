@@ -70,11 +70,18 @@
 ## 第10周(2021.9.7-2021.9.13)
 
 - 做的东西零零散散，该调整一下
-
 - 打了两天RCTF，爆0(茶
+
+## 第11~12周(2021.9.14-2021.9.27)
+
+- Tiny-OS写到中断
+- 复习部分计网相关知识
+- 入门学习数据库相关知识、编译原理(CS143+抄别人的Tiny C Compiler)、UNIX高级环境编程
+- 学习部分codeql追踪的知识，还得慢慢啃文档，而且别人的博客已经过时(
+- 继续刷pwnable
+- 国庆争取完成Tiny-OS以及APUE
 
 ## Todo List
 
 - Top：MIT6.828&操作系统真象还原&codeql&HEVD
 - High：IDA plugin&Fuzzing101&sqlite
-
