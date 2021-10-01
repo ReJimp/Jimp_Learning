@@ -2,6 +2,9 @@ TI_GDT          equ         0
 RPL0            equ         0
 SELECTOR_VIDEO  equ         (0x0003 << 3) + TI_GDT + RPL0
 
+section .data
+put_int_buffer  dq          0           ; 用于整数到字符串的转换
+
 [bits 32]
 section .text
 ;---------------------put_char---------------------
@@ -77,7 +80,7 @@ put_char:
 ;第0屏行范围是0～24，将屏幕的第1～24行搬运到第0～23行，清空第24行，可实现滚屏
 .roll_screen:
     cld                                 ; DF标志位清0
-    mov ecx, 960                        ; (2000-80)*2/4=960
+    mov ecx, 960                        ; (2000-80) * 2 / 4 = 960
     mov esi, 0xc00b80a0                 ; 第一行行首
     mov edi, 0xc00b8000                 ; 第零行行首
     rep movsd
@@ -111,5 +114,91 @@ put_char:
     out dx, al
 
 .put_char_done:
+    popad
+    ret
+
+;---------------------put_str----------------------
+; 功能:通过 put_char 来打印以 0 字符结尾的字符串
+;--------------------------------------------------
+global put_str
+put_str:
+    ; 函数只需备份EBX与ECX
+    push ebx
+    push ecx
+    xor ecx, ecx
+    mov ebx, [esp + 12]                 ;获取字符串地址
+
+.goon:
+    mov cl, [ebx]
+    cmp cl, 0
+    jz .str_over
+    push ecx
+    call put_char
+    add esp, 4
+    inc ebx
+    jmp .goon
+
+.str_over:
+    pop ecx
+    pop ebx
+    ret
+
+;---------------------put_int----------------------
+; 功能:通过 put_char 来打印整数
+;--------------------------------------------------
+global put_int
+put_int:
+    pushad
+    mov ebp, esp
+    mov eax, [ebp + 4 * 9]
+    mov edx, eax
+    mov edi, 7                          ; 采用大端序，此时为put_int_buffer最后一字节偏移量
+    mov ecx, 8                          ; 比较八次，4位二进制数字可转化为1位十六进制数字，一共32位二进制位
+    mov ebx, put_int_buffer
+
+.16based_4bits:
+    and edx, 0x0000000F                 ; 获取低4位
+    cmp edx, 9
+    jg .is_A2F
+    add edx, '0'
+    jmp .store
+
+.is_A2F:
+    sub edx, 10
+    add edx, 'A'
+
+.store:
+    mov [ebx + edi], dl                 ; 存储一字节
+    dec edi
+    shr eax, 4
+    mov edx, eax
+    loop .16based_4bits
+
+.ready_to_print:
+    inc edi                             ; 循环结束时其为-1，将EDI恢复到0
+
+.skip_prefix_0:
+    cmp edi, 8                          ; 表示全为0
+    je .full0
+
+.go_on_skip:
+    mov cl, [put_int_buffer + edi]
+    inc edi
+    cmp cl, '0'
+    je .skip_prefix_0
+    dec edi                             ; 不为0则回退到当前数字
+    jmp .put_each_num
+
+.full0:
+    mov cl, '0'                         ; 只需打印'0'
+
+.put_each_num:
+    push ecx
+    call put_char
+    add esp, 4
+    inc edi
+    mov cl, [put_int_buffer + edi]
+    cmp edi, 8
+    jl .put_each_num
     popad
     ret

@@ -188,23 +188,6 @@ enter_kernel:
     mov esp, 0xC009F000
     jmp KERNEL_ENTRY_POINT
 
-    mov byte [gs:160], 'V'
-    mov byte [gs:161], 0x41
-    mov byte [gs:162], 'i'
-    mov byte [gs:163], 0x41
-    mov byte [gs:164], 'r'
-    mov byte [gs:165], 0x41
-    mov byte [gs:166], 't'
-    mov byte [gs:167], 0x41
-    mov byte [gs:168], 'u'
-    mov byte [gs:169], 0x41
-    mov byte [gs:170], 'a'
-    mov byte [gs:171], 0x41
-    mov byte [gs:172], 'l'
-    mov byte [gs:173], 0x41
-
-    jmp $
-
 ; --------拷贝kernel.bin中的segment到编译的地址-------
 kernel_init:
     xor eax, eax
