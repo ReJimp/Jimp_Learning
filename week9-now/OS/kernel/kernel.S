@@ -3,10 +3,9 @@
 %define ZERO push 0                     ; 若CPU未压入错误码，则需手动占用错误码的栈空间
                                         ; 错误码需要手动弹出
 
-extern put_str                          ; 外部函数声明
+extern idt_table                        ; 中断处理函数地址数组
 
 section .data
-intr_str db "interrupt occur!", 0xa, 0
 global intr_entry_table
 intr_entry_table:
 
@@ -14,20 +13,38 @@ intr_entry_table:
 section .text                           ; 用向量号标识对应的中断处理程序
 intr%1entry:
     %2
-    push intr_str
-    call put_str
-    add esp, 4                          ; 栈平衡
+    ; 保留上下文环境
+    push ds
+    push es
+    push fs
+    push gs
+    pushad
 
-    mov al, 0x20                        ; 发送EOI信号
-    out 0xa0, al                        ; 从片
-    out 0x20, al                        ; 主片
+    mov al, 0x20
+    out 0xa0, al
+    out 0x20, al
 
-    add esp, 4                          ; 将错误码弹出
-    iret
+    push %1
+
+    call [idt_table + %1 * 4]
+    add esp, 4
+    jmp intr_exit
 
 section .data
     dd intr%1entry
 %endmacro
+
+section .text
+global intr_exit
+intr_exit:
+    ; 恢复上下文
+    popad
+    pop gs
+    pop fs
+    pop es
+    pop ds
+    add esp, 4                          ; 跳过错误码
+    iretd
 
 VECTOR 0x00, ZERO
 VECTOR 0x01, ZERO
