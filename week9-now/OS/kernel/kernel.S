@@ -1,6 +1,6 @@
 [bits 32]
 %define ERROR_CODE nop                  ; 若CPU自动压入错误码，则无需进行操作
-%define ZERO push 0                     ; 若CPU未压入错误码，则压入0占用错误码的栈空间
+%define ZERO push 0                     ; 若CPU未压入错误码，则需手动占用错误码的栈空间
                                         ; 错误码需要手动弹出
 
 extern put_str                          ; 外部函数声明
@@ -22,7 +22,7 @@ intr%1entry:
     out 0xa0, al                        ; 从片
     out 0x20, al                        ; 主片
 
-    add esp, 4
+    add esp, 4                          ; 将错误码弹出
     iret
 
 section .data
