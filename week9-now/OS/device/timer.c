@@ -21,8 +21,8 @@ static void frequency_set(uint8_t counter_port, uint8_t counter_no, uint8_t rwl,
 
 // 初始化PIT8253
 void timer_init() {
-    put_str("timer_init start\n");
+    put_str(" timer_init start\n");
     // 设置定时周期，即发中断的周期
     frequency_set(COUNTER0_PORT, COUNTER0_NO, READ_WRITE_LATCH, COUNTER_MODE, COUNTER0_VALUE);
-    put_str("timer_init done\n");
+    put_str(" timer_init done\n");
 }
