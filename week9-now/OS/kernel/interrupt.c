@@ -12,7 +12,7 @@
 #define IDT_DESC_CNT 0x21    //中断数量
 
 #define EFLAGS_IF   0x00000200 //if位置1
-#define GET_EFLAGS(EFLAG_VAR)   __asm volatile ("pushf1; popl %0" : "=g"(EFLAG_VAR))
+#define GET_EFLAGS(EFLAG_VAR)   __asm volatile ("pushfl; popl %0" : "=g"(EFLAG_VAR))
 
 
 // 中断门描述符结构体
