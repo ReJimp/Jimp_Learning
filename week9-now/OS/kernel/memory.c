@@ -50,7 +50,7 @@ static void* vaddr_get(enum pool_flags pf, uint32_t pg_cnt) {
     return (void*)vaddr_start;
 }
 
-// 得到虚拟地址vaddr对应的pte指针
+// 得到虚拟地址vaddr对应的pte的指针
 uint32_t* pte_ptr(uint32_t vaddr) {
     uint32_t* pte = (uint32_t*)(0xffc00000 + \
     ((vaddr & 0xffc00000) >> 10) + \
@@ -73,7 +73,7 @@ static void* palloc(struct pool* m_pool) {
 
     bitmap_set(&m_pool->pool_bitmap, bit_idx, 1);
     uint32_t page_phyaddr = ((bit_idx * PG_SIZE) + m_pool->phy_addr_start);
-     return (void*)page_phyaddr;
+    return (void*)page_phyaddr;
 }
 
 // 页表添加虚拟地址与物理地址的映射
