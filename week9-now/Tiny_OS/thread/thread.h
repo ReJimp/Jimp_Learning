@@ -2,7 +2,7 @@
 #define __THREAD_THREAD_H
 #include "stdint.h"
 
-// 通用函数类型，许多线程函数中作为形参类型
+// 通用函数类型，在许多线程函数中作为形参类型
 typedef void thread_func(void*);
 
 // 进程或线程的状态
@@ -74,13 +74,12 @@ struct task_struct {
     uint32_t* self_kstack;  // 各内核线程都用自己的内核栈
     enum task_status status;
     uint8_t priority;       // 线程优先级
-    char name[16];
+    char name[20];
     uint32_t stack_magic;   // 用这串数字做栈的边界标记,用于检测栈的溢出
 };
 
 void thread_create(struct task_struct* pthread, thread_func function, void* func_arg);
 void init_thread(struct task_struct* pthread, char* name, int prio);
 struct task_struct* thread_start(char* name, int prio, thread_func function, void* func_arg);
-
 
 #endif
