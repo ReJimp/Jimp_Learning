@@ -2,7 +2,9 @@
 #define __LIB_KERNEL_LIST_H
 #include "global.h"
 
+// 获取成员变量在结构体中的偏移
 #define offset(struct_type, member) (int)(&((struct_type*)0)->member)
+// 从成员变量地址获取结构体首地址
 #define elem2entry(struct_type, struct_member_name, elem_ptr) \
         (struct_type*)((int)elem_ptr - offset(struct_type, struct_member_name))
 
@@ -12,7 +14,7 @@ struct list_elem {
     struct list_elem* next; //指向后一节点
 };
 
-// 链表结构，实现队列
+// 使用链表结构实现队列
 struct list {
     // 队首,非第一个元素
     struct list_elem head;

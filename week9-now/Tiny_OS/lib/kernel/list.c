@@ -11,7 +11,7 @@ void list_init(struct list* plist) {
 
 // 把链表元素elem插入在元素before之前
 void list_insert_before(struct list_elem* before, struct list_elem* elem) {
-    // 关中断
+    // 内核原语需要关中断
     enum intr_status old_status = intr_disable();
 
     elem->next = before;
@@ -63,9 +63,9 @@ bool elem_find(struct list* plist, struct list_elem* obj_elem) {
 }
 
 /* 把列表plist中的每个元素elem和arg传给回调函数func,
- * arg给func用来判断elem是否符合条件.
+ * arg给func用来判断elem是否符合条件
  * 本函数的功能是遍历列表内所有元素,逐个判断是否有符合条件的元素。
- * 找到符合条件的元素返回元素指针,否则返回NULL. */
+ * 找到符合条件的元素返回元素指针,否则返回NULL */
 struct list_elem* list_traversal(struct list* plist, function func, int arg) {
     struct list_elem* elem = plist->head.next;
     if(list_empty(plist)) {

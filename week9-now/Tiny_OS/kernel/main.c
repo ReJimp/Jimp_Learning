@@ -20,15 +20,35 @@ int main()
     // put_int((uint32_t)addr);
     // put_char('\n');
 
-    // 测试线程
-    thread_start("k_thread_jimp", 31, k_thread_jimp, "k-thread-jimp-args\n");
+    // 测试单线程
+    // thread_start("k_thread_a", 31, k_thread_a, "k_thread_a-args\n");
+
+    // 测试多线程
+    thread_start("k_thread_a", 31, k_thread_a, "A-args\n");
+    thread_start("k_thread_b", 8, k_thread_b, "B-args\n");
+
+    intr_enable();
+    while (1)
+    {
+        put_str("Main\n");
+    }
+    
 
     while(1);
     return 0;
 }
 
 // 线程中运行的函数
-void k_thread_jimp(void* arg) {
+void k_thread_a(void* arg) {
+    char* para = (char*)arg;
+    while (1)
+    {
+        put_str(para);
+    }
+}
+
+// 线程中运行的函数
+void k_thread_b(void* arg) {
     char* para = (char*)arg;
     while (1)
     {
