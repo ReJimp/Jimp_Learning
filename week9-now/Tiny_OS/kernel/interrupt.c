@@ -9,7 +9,7 @@
 #define PIC_S_CTRL  0xa0     //从片控制端口
 #define PIC_S_DATA  0xa1     //从片数据端口
 
-#define IDT_DESC_CNT 0x21    //中断数量
+#define IDT_DESC_CNT 0x30    //中断数量
 
 #define EFLAGS_IF   0x00000200 //if位置1
 #define GET_EFLAGS(EFLAG_VAR)   __asm volatile ("pushfl; popl %0" : "=g"(EFLAG_VAR))
@@ -52,7 +52,11 @@ static void pic_init() {
     outb(PIC_S_DATA, 0x01); // ICW4: 8086模式, 正常EOI
 
     // 打开主片IR0，接受时钟中断
-    outb(PIC_M_DATA, 0xfe);
+    // outb(PIC_M_DATA, 0xfe);
+    // outb(PIC_S_DATA, 0xff);
+
+    // 打开主片IR1，接受键盘中断
+    outb(PIC_M_DATA, 0xfd);
     outb(PIC_S_DATA, 0xff);
 
     put_str("  pic_init done\n");
