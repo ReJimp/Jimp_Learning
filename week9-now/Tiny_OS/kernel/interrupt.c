@@ -56,7 +56,11 @@ static void pic_init() {
     // outb(PIC_S_DATA, 0xff);
 
     // 打开主片IR1，接受键盘中断
-    outb(PIC_M_DATA, 0xfd);
+    // outb(PIC_M_DATA, 0xfd);
+    // outb(PIC_S_DATA, 0xff);
+
+    // 同时开启时钟和键盘中断
+    outb(PIC_M_DATA, 0xfc);
     outb(PIC_S_DATA, 0xff);
 
     put_str("  pic_init done\n");

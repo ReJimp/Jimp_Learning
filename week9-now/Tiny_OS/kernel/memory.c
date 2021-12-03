@@ -5,6 +5,7 @@
 #include "debug.h"
 #include "print.h"
 #include "string.h"
+#include "sync.h"
 
 // 页大小
 #define PG_SIZE 4096
@@ -21,19 +22,23 @@
 #define PTE_IDX(addr) ((addr & 0x003ff000) >> 12)
 
 // 内存池结构，生产两个实例用于管理内核内存池和用户内存池
-struct pool {
+struct pool 
+{
     struct bitmap pool_bitmap;  // 位图结构，用于管理物理内存
     uint32_t phy_addr_start;    // 物理内存起始地址
     uint32_t pool_size;         // 池容量
+    struct lock plock;
 };
 
 struct pool kernel_pool, user_pool; // 实例化物理内存池
 struct virtual_addr kernel_vaddr;   // 为内核分配虚拟地址
 
 // 在PF表示的虚拟内存池中申请pg_cnt个虚拟页，成功则返回虚拟页的起始地址，失败则返回NULL
-static void* vaddr_get(enum pool_flags pf, uint32_t pg_cnt) {
+static void* vaddr_get(enum pool_flags pf, uint32_t pg_cnt) 
+{
     int vaddr_start = 0, bit_idx_start = -1;
     uint32_t cnt = 0;
+    // 内核内存池
     if(pf == PF_KERNEL) {
         bit_idx_start = bitmap_scan(&kernel_vaddr.vaddr_bitmap, pg_cnt);
         if(bit_idx_start == -1) {
@@ -44,14 +49,29 @@ static void* vaddr_get(enum pool_flags pf, uint32_t pg_cnt) {
         }
         vaddr_start = kernel_vaddr.vaddr_start + bit_idx_start * PG_SIZE;
     }
+    // 用户内存池
     else {
-        // 用户内存池
+        struct task_struct* cur = running_thread();
+        bit_idx_start = bitmap_scan(&cur->userprog_vaddr.vaddr_bitmap, pg_cnt);
+        if(bit_idx_start == -1)
+        {
+            return NULL;
+        }
+
+        while (cnt < pg_cnt)
+        {
+            bitmap_set(&cur->userprog_vaddr.vaddr_bitmap, bit_idx_start + cnt++, 1);
+        }
+        vaddr_start = cur->userprog_vaddr.vaddr_start + bit_idx_start * PG_SIZE;
+        // (0xc0000000 - PG_SIZE)作为用户3级栈已经在start_process被分配
+        ASSERT((uint32_t)vaddr_start < (0xc0000000 - PG_SIZE));
     }
     return (void*)vaddr_start;
 }
 
 // 得到虚拟地址vaddr对应的pte的指针
-uint32_t* pte_ptr(uint32_t vaddr) {
+uint32_t* pte_ptr(uint32_t vaddr) 
+{
     uint32_t* pte = (uint32_t*)(0xffc00000 + \
     ((vaddr & 0xffc00000) >> 10) + \
     PTE_IDX(vaddr) * 4);
@@ -59,13 +79,15 @@ uint32_t* pte_ptr(uint32_t vaddr) {
 }
 
 // 得到虚拟地址vaddr对应的pde的指针
-uint32_t* pde_ptr(uint32_t vaddr) {
+uint32_t* pde_ptr(uint32_t vaddr) 
+{
     uint32_t* pde = (uint32_t*)((0xfffff000) + PDE_IDX(vaddr) * 4);
     return pde;
 }
 
 // 在m_pool指向的物理内存池中分配一个物理页，成功则返回页框的物理地址，失败则返回NULL
-static void* palloc(struct pool* m_pool) {
+static void* palloc(struct pool* m_pool) 
+{
     int bit_idx = bitmap_scan(&m_pool->pool_bitmap, 1);
     if(bit_idx == -1) {
         return NULL;
@@ -77,7 +99,8 @@ static void* palloc(struct pool* m_pool) {
 }
 
 // 页表添加虚拟地址与物理地址的映射
-static void page_table_add(void* _vaddr, void* _page_phyaddr) {
+static void page_table_add(void* _vaddr, void* _page_phyaddr) 
+{
     uint32_t vaddr = (uint32_t)_vaddr, page_phyaddr = (uint32_t)_page_phyaddr;
     uint32_t* pde = pde_ptr(vaddr);
     uint32_t* pte = pte_ptr(vaddr);
@@ -109,7 +132,8 @@ static void page_table_add(void* _vaddr, void* _page_phyaddr) {
 }
 
 // 分配pg_cnt个页空间，成功则返回起始虚拟地址，失败则返回NULL
-void* malloc_page(enum pool_flags pf, uint32_t pg_cnt) {
+void* malloc_page(enum pool_flags pf, uint32_t pg_cnt) 
+{
     ASSERT(pg_cnt > 0 && pg_cnt < 3840);
 
     void* vaddr_start = vaddr_get(pf, pg_cnt);
@@ -132,7 +156,8 @@ void* malloc_page(enum pool_flags pf, uint32_t pg_cnt) {
 }
 
 // 从内核物理内存池中申请pg_cnt，成功则返回虚拟地址，失败则返回NULL
-void* get_kernel_page(uint32_t pg_cnt) {
+void* get_kernel_page(uint32_t pg_cnt) 
+{
     void* vaddr = malloc_page(PF_KERNEL, pg_cnt);
     if(vaddr != NULL) {
         memset(vaddr, 0, pg_cnt * PG_SIZE);
@@ -140,8 +165,66 @@ void* get_kernel_page(uint32_t pg_cnt) {
     return vaddr;
 }
 
+// 在用户空间中申请4k内存，并返回其虚拟地址
+void* get_user_pages(uint32_t pg_cnt)
+{
+    lock_acquire(&user_pool.plock);
+    void* vaddr = malloc_page(PF_USER, pg_cnt);
+    memset(vaddr, 0, PG_SIZE * pg_cnt);
+    lock_release(&user_pool.plock);
+    return vaddr;
+}
+
+// 将地址vaddr与pf池中的物理地址关联，仅支持一页空间分配
+void* get_a_page(enum pool_flags pf, uint32_t vaddr)
+{
+    struct pool* mem_pool = pf & PF_KERNEL ? &kernel_pool : &user_pool;
+    lock_acquire(&mem_pool->plock);
+
+    // 先将虚拟地址对应的位图置1
+    struct task_struct* cur = running_thread();
+    int32_t bit_idx = -1;
+
+    // 若当前是用户进程申请用户内存,就修改用户进程自己的虚拟地址位图
+    if(cur->pgdir != NULL && pf == PF_USER)
+    {
+        bit_idx = (vaddr - cur->userprog_vaddr.vaddr_start) / PG_SIZE;
+        ASSERT(bit_idx > 0);
+        bitmap_set(&cur->userprog_vaddr.vaddr_bitmap, bit_idx, 1);
+    }
+    // 若内核线程申请内核内存,就修改kernel_vaddr
+    else if(cur->pgdir == NULL && pf == PF_KERNEL)
+    {
+        bit_idx = (vaddr - kernel_vaddr.vaddr_start) / PG_SIZE;
+        ASSERT(bit_idx > 0);
+        bitmap_set(&kernel_vaddr.vaddr_bitmap, bit_idx, 1);
+    }
+    else
+    {
+        PANIC("get_a_page: not allow kernel alloc userspace or user alloc kernelspace by get_a_page\n");
+    }
+
+    void* page_phyaddr = palloc(mem_pool);
+    if(page_phyaddr == NULL)
+    {
+        return NULL;
+    }
+    page_table_add((void*)vaddr, page_phyaddr);
+    lock_release(&mem_pool->plock);
+    return (void*)vaddr;
+}
+
+// 得到虚拟地址映射到的物理地址
+uint32_t addr_v2p(uint32_t vaddr)
+{
+    uint32_t* pte = pte_ptr(vaddr);
+    // 去掉其低12位的页表项属性+虚拟地址vaddr的低12位
+    return ((*pte & 0xFFFFF000) + (vaddr & 0x00000FFF));
+}
+
 // 初始化内核池
-static void mem_pool_init(uint32_t all_mem) {
+static void mem_pool_init(uint32_t all_mem) 
+{
     put_str(" mem_pool_init start\n");
     // 1页目录表+255页表   
     uint32_t page_table_size = PG_SIZE * 256;
@@ -211,6 +294,10 @@ static void mem_pool_init(uint32_t all_mem) {
     bitmap_init(&kernel_pool.pool_bitmap);
     bitmap_init(&user_pool.pool_bitmap);
 
+    // 初始化内存池的锁
+    lock_init(&kernel_pool.plock);
+    lock_init(&user_pool.plock);
+
     kernel_vaddr.vaddr_bitmap.btmp_bytes_len = kbm_length;
 
     kernel_vaddr.vaddr_bitmap.bits = (void*)(MEM_BITMAP_BASE + kbm_length + ubm_length);
@@ -228,7 +315,8 @@ static void mem_pool_init(uint32_t all_mem) {
 }
 
 // 内存管理部分初始化入口
-void mem_init() {
+void mem_init() 
+{
     put_str("mem_init start\n");
     // loader.S中获取到的物理内存总量存储到0xb00地址处
     uint32_t mem_bytes_total = *(uint32_t*)(0xb00);

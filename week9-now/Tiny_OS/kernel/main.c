@@ -3,6 +3,8 @@
 #include "thread.h"
 #include "interrupt.h"
 #include "console.h"
+#include "ioqueue.h"
+#include "keyboard.h"
 // #include "memory.h"
 // #include "debug.h"
 
@@ -39,25 +41,43 @@ int main()
     // }
 
     // 测试键盘中断
+    // intr_enable();
+
+    // 测试线程同步
+    thread_start("comsumer_a", 31, k_thread_a, "A_");
+    thread_start("comsumer_b", 31, k_thread_b, "B_");
     intr_enable();
+    while(1);
     return 0;
 }
 
 // 线程中运行的函数
 void k_thread_a(void* arg) {
-    char* para = (char*)arg;
-    while (1)
+    while(1)
     {
-        console_put_str(para);
+        enum intr_status old_status = intr_disable();
+        if(!ioq_empty(&kbd_buf))
+        {
+            console_put_str(arg);
+            char character = ioq_getchar(&kbd_buf);
+            console_put_char(character);
+        }
+        intr_set_status(old_status);
     }
 }
 
 // 线程中运行的函数
 void k_thread_b(void* arg) {
-    char* para = (char*)arg;
-    while (1)
+    while(1)
     {
-        console_put_str(para);
+        enum intr_status old_status = intr_disable();
+        if(!ioq_empty(&kbd_buf))
+        {
+            console_put_str(arg);
+            char character = ioq_getchar(&kbd_buf);
+            console_put_char(character);
+        }
+        intr_set_status(old_status);
     }
 }
 

@@ -2,6 +2,8 @@
 #define __THREAD_THREAD_H
 #include "stdint.h"
 #include "list.h"
+#include "bitmap.h"
+#include "memory.h"
 
 // 通用函数类型，在许多线程函数中作为形参类型
 typedef void thread_func(void*);
@@ -75,16 +77,17 @@ struct thread_stack {
 
 // 进程或线程的PCB
 struct task_struct {
-    uint32_t* self_kstack;          // 各内核线程都用自己的内核栈
+    uint32_t* self_kstack;              // 各内核线程都用自己的内核栈
     enum task_status status;
     char name[20];
-    uint8_t priority;               // 线程优先级
-    uint8_t ticks;                  // 处理器分配的时间片
-    uint32_t elapsed_ticks;         // 任务至今执行总时间
-    struct list_elem general_tag;   // general_tag的作用是用于线程在一般的队列中的结点  
-    struct list_elem all_list_tag;  // all_list_tag的作用是用于线程队列thread_all_list中的结点
-    uint32_t* pgdir;                // 进程自己页表的虚拟地址
-    uint32_t stack_magic;           // 用这串数字做栈的边界标记,用于检测栈的溢出
+    uint8_t priority;                   // 线程优先级
+    uint8_t ticks;                      // 处理器分配的时间片
+    uint32_t elapsed_ticks;             // 任务至今执行总时间
+    struct list_elem general_tag;       // general_tag的作用是用于线程在一般的队列中的结点  
+    struct list_elem all_list_tag;      // all_list_tag的作用是用于线程队列thread_all_list中的结点
+    uint32_t* pgdir;                    // 进程自己页表的虚拟地址
+    struct virtual_addr userprog_vaddr; // 
+    uint32_t stack_magic;               // 用这串数字做栈的边界标记,用于检测栈的溢出
 };
 
 void thread_create(struct task_struct* pthread, thread_func function, void* func_arg);
