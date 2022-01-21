@@ -6,17 +6,17 @@
 
 - show regs
 
-<img src="./TinyPyDbg/img/1.png" style="zoom:67%;" />
+<img src="./img/1.png" style="zoom:67%;" />
 
 - software breakpoints
 
-<img src="./TinyPyDbg/img/2.png" style="zoom: 80%;" />
+<img src="./img/2.png" style="zoom: 80%;" />
 
 - hardware breakpoints
 
-<img src="./TinyPyDbg/img/3.png" style="zoom:80%;" />
+<img src="./img/3.png" style="zoom:80%;" />
 
 - memory breakpoints
 
-<img src="./TinyPyDbg/img/4.png" style="zoom:80%;" />
+<img src="./img/4.png" style="zoom:80%;" />
 
